@@ -35,6 +35,7 @@ let persons = [
   }
 ];
 
+app.use(express.static("build"));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(
