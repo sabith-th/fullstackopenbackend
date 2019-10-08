@@ -2,7 +2,8 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const PORT = 3001;
+const cors = require("cors");
+const PORT = process.env.PORT || 3001;
 
 morgan.token("body", (req, res) => {
   if (req.method === "POST") {
@@ -34,6 +35,7 @@ let persons = [
   }
 ];
 
+app.use(cors());
 app.use(bodyParser.json());
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
