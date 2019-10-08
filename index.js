@@ -14,29 +14,6 @@ morgan.token("body", (req, res) => {
   return "";
 });
 
-let persons = [
-  {
-    name: "Arto Hellas",
-    number: "040-123456",
-    id: 1
-  },
-  {
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-    id: 2
-  },
-  {
-    name: "Dan Abramov",
-    number: "12-43-234345",
-    id: 3
-  },
-  {
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-    id: 4
-  }
-];
-
 app.use(express.static("build"));
 app.use(cors());
 app.use(bodyParser.json());
@@ -44,16 +21,25 @@ app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
 
-const generateId = () => Math.floor(Math.random() * Math.floor(100000));
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message);
 
-const findDuplicate = name =>
-  persons.find(person => person.name.toLowerCase() === name.toLowerCase());
+  if (error.name === "CastError" && error.kind === "ObjectId") {
+    return res.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
 
 app.get("/info", (req, res) => {
-  res.send(`
-    <p>Phonebook has info on ${persons.length} people</p>
+  Person.countDocuments({})
+    .then(result =>
+      res.send(`
+    <p>Phonebook has info on ${result} people</p>
     <p>${new Date()}</p>
-  `);
+  `)
+    )
+    .catch(e => next(e));
 });
 
 app.get("/api/persons", (req, res) => {
@@ -65,17 +51,22 @@ app.get("/api/persons", (req, res) => {
 app.get("/api/persons/:id", (req, res) => {
   Person.findById(req.params.id)
     .then(person => {
-      res.json(person.toJSON());
+      if (person) {
+        res.json(person.toJSON());
+      } else {
+        res.status(404).end();
+      }
     })
     .catch(e => {
-      res.status(404).end();
+      console.log(e);
+      res.status(400).send({ error: "malformed id" });
     });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
-  const id = Number(req.params.id);
-  persons = persons.filter(person => person.id !== id);
-  res.status(204).end();
+  Person.findByIdAndRemove(req.params.id)
+    .then(result => res.status(204).end())
+    .catch(e => next(e));
 });
 
 app.post("/api/persons", (req, res) => {
@@ -99,4 +90,16 @@ app.post("/api/persons", (req, res) => {
   person.save().then(savedPerson => res.json(savedPerson.toJSON()));
 });
 
+app.put("/api/persons/:id", (req, res) => {
+  const body = req.body;
+  const person = {
+    number: body.number
+  };
+
+  Person.findByIdAndUpdate(req.params.id, person, { new: true })
+    .then(updatedPerson => res.json(updatedPerson.toJSON()))
+    .catch(e => next(e));
+});
+
+app.use(errorHandler);
 app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));

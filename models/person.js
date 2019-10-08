@@ -9,6 +9,8 @@ mongoose
   .then(result => console.log(`Connected to MongoDB`))
   .catch(e => console.log(`Error connecting to MongoDB: `, e.message));
 
+mongoose.set("useFindAndModify", false);
+
 const personSchema = new mongoose.Schema({
   name: String,
   number: String
