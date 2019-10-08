@@ -1,9 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
 const cors = require("cors");
-const PORT = process.env.PORT || 3001;
+const Person = require("./models/person");
+const PORT = process.env.PORT;
 
 morgan.token("body", (req, res) => {
   if (req.method === "POST") {
@@ -55,17 +57,19 @@ app.get("/info", (req, res) => {
 });
 
 app.get("/api/persons", (req, res) => {
-  res.json(persons);
+  Person.find({}).then(persons => {
+    res.json(persons.map(person => person.toJSON()));
+  });
 });
 
 app.get("/api/persons/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find(person => person.id === id);
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
-  }
+  Person.findById(req.params.id)
+    .then(person => {
+      res.json(person.toJSON());
+    })
+    .catch(e => {
+      res.status(404).end();
+    });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -87,21 +91,12 @@ app.post("/api/persons", (req, res) => {
     });
   }
 
-  if (findDuplicate(body.name)) {
-    return res.status(400).json({
-      error: "Contact name must be unique"
-    });
-  }
-
-  const person = {
+  const person = new Person({
     name: body.name,
-    number: body.number,
-    id: generateId()
-  };
+    number: body.number
+  });
 
-  persons = persons.concat(person);
-
-  res.json(person);
+  person.save().then(savedPerson => res.json(savedPerson.toJSON()));
 });
 
 app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
