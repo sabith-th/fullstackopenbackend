@@ -1,39 +1,39 @@
-require("dotenv").config();
-const express = require("express");
+require('dotenv').config();
+const express = require('express');
 const app = express();
-const bodyParser = require("body-parser");
-const morgan = require("morgan");
-const cors = require("cors");
-const Person = require("./models/person");
+const bodyParser = require('body-parser');
+const morgan = require('morgan');
+const cors = require('cors');
+const Person = require('./models/person');
 const PORT = process.env.PORT;
 
-morgan.token("body", (req, res) => {
-  if (req.method === "POST") {
+morgan.token('body', (req, res) => {
+  if (req.method === 'POST') {
     return JSON.stringify(req.body);
   }
-  return "";
+  return '';
 });
 
-app.use(express.static("build"));
+app.use(express.static('build'));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :body")
+  morgan(':method :url :status :res[content-length] - :response-time ms :body')
 );
 
-const errorHandler = (error, req, res, next) => {
+const errorHandler = (error, _req, res, next) => {
   console.error(error.message);
 
-  if (error.name === "CastError" && error.kind === "ObjectId") {
-    return res.status(400).send({ error: "malformatted id" });
-  } else if (error.name === "ValidationError") {
+  if (error.name === 'CastError' && error.kind === 'ObjectId') {
+    return res.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
     return res.status(400).json({ error: error.message });
   }
 
   next(error);
 };
 
-app.get("/info", (req, res, next) => {
+app.get('/info', (_req, res, next) => {
   Person.countDocuments({})
     .then(result =>
       res.send(`
@@ -44,13 +44,13 @@ app.get("/info", (req, res, next) => {
     .catch(e => next(e));
 });
 
-app.get("/api/persons", (req, res) => {
+app.get('/api/persons', (_req, res) => {
   Person.find({}).then(persons => {
     res.json(persons.map(person => person.toJSON()));
   });
 });
 
-app.get("/api/persons/:id", (req, res, next) => {
+app.get('/api/persons/:id', (req, res, next) => {
   Person.findById(req.params.id)
     .then(person => {
       if (person) {
@@ -65,13 +65,13 @@ app.get("/api/persons/:id", (req, res, next) => {
     });
 });
 
-app.delete("/api/persons/:id", (req, res, next) => {
+app.delete('/api/persons/:id', (req, res, next) => {
   Person.findByIdAndRemove(req.params.id)
-    .then(result => res.status(204).end())
+    .then(() => res.status(204).end())
     .catch(e => next(e));
 });
 
-app.post("/api/persons", (req, res, next) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
 
   const person = new Person({
@@ -88,7 +88,7 @@ app.post("/api/persons", (req, res, next) => {
     });
 });
 
-app.put("/api/persons/:id", (req, res, next) => {
+app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body;
   const person = {
     number: body.number
